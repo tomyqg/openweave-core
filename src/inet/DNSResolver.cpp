@@ -65,6 +65,9 @@ Weave::System::ObjectPool<DNSResolver, INET_CONFIG_NUM_DNS_RESOLVERS> DNSResolve
  *  @param[in]  hostNameLen The string length of host name.
  *  @param[in]  maxAddrs    The maximum number of addresses to store in the DNS
  *                          table.
+ *  @param[in]  options     An integer value controlling how host name address
+ *                          resolution is performed.  Values are from the #DNSOptions
+ *                          enumeration.
  *  @param[in]  addrArray   A pointer to the DNS table.
  *  @param[in]  onComplete  A pointer to the callback function when a DNS
  *                          request is complete.
@@ -82,13 +85,31 @@ Weave::System::ObjectPool<DNSResolver, INET_CONFIG_NUM_DNS_RESOLVERS> DNSResolve
  *                                          resolver implementation.
  *
  */
-INET_ERROR DNSResolver::Resolve(const char *hostName, uint16_t hostNameLen, uint8_t maxAddrs, IPAddress *addrArray,
-    DNSResolver::OnResolveCompleteFunct onComplete, void *appState)
+INET_ERROR DNSResolver::Resolve(const char *hostName, uint16_t hostNameLen, uint8_t options,
+        uint8_t maxAddrs, IPAddress *addrArray,
+        DNSResolver::OnResolveCompleteFunct onComplete, void *appState)
 {
+    INET_ERROR res = INET_NO_ERROR;
+
 #if !WEAVE_SYSTEM_CONFIG_USE_SOCKETS && !LWIP_DNS
     Release();
     return INET_ERROR_NOT_IMPLEMENTED;
 #endif // !WEAVE_SYSTEM_CONFIG_USE_SOCKETS && !LWIP_DNS
+
+    uint8_t addrFamilyOption = (options & kDNSOption_AddrFamily_Mask);
+    uint8_t optionFlags = (options & kDNSOption_Flags_Mask);
+
+    // Check that the supplied options are valid.
+    if ((addrFamilyOption != kDNSOption_AddrFamily_Any &&
+         addrFamilyOption != kDNSOption_AddrFamily_IPv4Only &&
+         addrFamilyOption != kDNSOption_AddrFamily_IPv4Preferred &&
+         addrFamilyOption != kDNSOption_AddrFamily_IPv6Only &&
+         addrFamilyOption != kDNSOption_AddrFamily_IPv6Preferred) ||
+        (optionFlags & ~kDNSOption_ValidFlags) != 0)
+    {
+        Release();
+        return INET_ERROR_BAD_ARGS;
+    }
 
 #if WEAVE_SYSTEM_CONFIG_USE_SOCKETS || (WEAVE_SYSTEM_CONFIG_USE_LWIP && LWIP_DNS)
 
@@ -100,26 +121,64 @@ INET_ERROR DNSResolver::Resolve(const char *hostName, uint16_t hostNameLen, uint
     memcpy(hostNameBuf, hostName, hostNameLen);
     hostNameBuf[hostNameLen] = 0;
 
-#if WEAVE_SYSTEM_CONFIG_USE_LWIP
-
-    INET_ERROR res = INET_NO_ERROR;
-
     AppState = appState;
-
-    if (maxAddrs > INET_CONFIG_MAX_DNS_ADDRS)
-        maxAddrs = INET_CONFIG_MAX_DNS_ADDRS;
-
     AddrArray = addrArray;
     MaxAddrs = maxAddrs;
     NumAddrs = 0;
+    DNSOptions = options;
     OnComplete = onComplete;
+
+#if WEAVE_SYSTEM_CONFIG_USE_LWIP
+
+#if LWIP_VERSION_MAJOR > 1 || LWIP_VERSION_MINOR >= 5
+
+    u8_t lwipAddrType;
+
+#if INET_CONFIG_ENABLE_IPV4
+    switch (addrFamilyOption)
+    {
+    case kDNSOption_AddrFamily_IPv4Only:
+        lwipAddrType = LWIP_DNS_ADDRTYPE_IPV4;
+        break;
+    case kDNSOption_AddrFamily_Any:
+    case kDNSOption_AddrFamily_IPv4Preferred:
+        lwipAddrType = LWIP_DNS_ADDRTYPE_IPV4_IPV6;
+        break;
+    case kDNSOption_AddrFamily_IPv6Only:
+        lwipAddrType = LWIP_DNS_ADDRTYPE_IPV6;
+        break;
+    case kDNSOption_AddrFamily_IPv6Preferred:
+        lwipAddrType = LWIP_DNS_ADDRTYPE_IPV6_IPV4;
+        break;
+    }
+#else // INET_CONFIG_ENABLE_IPV4
+    lwipAddrType = LWIP_DNS_ADDRTYPE_IPV6;
+#endif // INET_CONFIG_ENABLE_IPV4
+
+#else // LWIP_VERSION_MAJOR <= 1 || LWIP_VERSION_MINOR < 5
+
+#if INET_CONFIG_ENABLE_IPV4
+    if (addrFamilyOption == kDNSOption_AddrFamily_IPv6Only)
+#endif
+    {
+        Release();
+        return INET_ERROR_NOT_IMPLEMENTED;
+    }
+
+#endif // LWIP_VERSION_MAJOR <= 1 || LWIP_VERSION_MINOR < 5
 
     // Lock LwIP stack
     LOCK_TCPIP_CORE();
 
-    ip_addr_t lwipAddrArray[INET_CONFIG_MAX_DNS_ADDRS];
+    ip_addr_t lwipAddr;
     LWIP_DNS_FOUND_CALLBACK_TYPE lwipCallback = reinterpret_cast<LWIP_DNS_FOUND_CALLBACK_TYPE>(LwIPHandleResolveComplete);
-    err_t lwipErr = dns_gethostbyname(hostNameBuf, lwipAddrArray, lwipCallback, this);
+
+    err_t lwipErr =
+#if LWIP_VERSION_MAJOR > 1 || LWIP_VERSION_MINOR >= 5
+            dns_gethostbyname_addrtype(hostNameBuf, &lwipAddr, lwipCallback, this, lwipAddrType);
+#else
+            dns_gethostbyname(hostNameBuf, &lwipAddr, lwipCallback, this);
+#endif
 
     // Unlock LwIP stack
     UNLOCK_TCPIP_CORE();
@@ -128,7 +187,13 @@ INET_ERROR DNSResolver::Resolve(const char *hostName, uint16_t hostNameLen, uint
     {
         Weave::System::Layer& lSystemLayer = SystemLayer();
 
-        CopyAddresses(1, lwipAddrArray);
+#if LWIP_VERSION_MAJOR > 1 || LWIP_VERSION_MINOR >= 5
+        AddrArray[0] = IPAddress::FromLwIPAddr(lwipAddr);
+#else
+        AddrArray[0] = IPAddress::FromIPv4(lwipAddr);
+#endif
+        NumAddrs = 1;
+
         lSystemLayer.PostEvent(*this, kInetEvent_DNSResolveComplete, 0);
     }
     else if (lwipErr != ERR_INPROGRESS)
@@ -143,53 +208,24 @@ INET_ERROR DNSResolver::Resolve(const char *hostName, uint16_t hostNameLen, uint
 
 #if WEAVE_SYSTEM_CONFIG_USE_SOCKETS
 
-    INET_ERROR err = INET_NO_ERROR;
-    struct addrinfo hints;
-    struct addrinfo *lookupRes = NULL;
-    int getaddrinfoRes;
+    struct addrinfo gaiHints;
+    struct addrinfo * gaiResults = NULL;
+    int gaiReturnCode;
 
-    NumAddrs = 0;
+    // Configure the hints argument for getaddrinfo()
+    InitAddrInfoHints(gaiHints);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = 6;
-    hints.ai_flags = AI_ADDRCONFIG;
+    // Call getaddrinfo() to perform the name resolution.
+    gaiReturnCode = getaddrinfo(hostNameBuf, NULL, &gaiHints, &gaiResults);
 
-    getaddrinfoRes = getaddrinfo(hostNameBuf, NULL, &hints, &lookupRes);
+    // Process the return code and results list returned by getaddrinfo(). If the call
+    // was successful this will copy the resultant addresses into the caller's array.
+    res = ProcessGetAddrInfoResult(gaiReturnCode, gaiResults);
 
-    if (getaddrinfoRes == 0)
-    {
-        for (struct addrinfo *addr = lookupRes; addr != NULL && NumAddrs < maxAddrs; addr = addr->ai_next, NumAddrs++)
-            addrArray[NumAddrs] = IPAddress::FromSockAddr(*addr->ai_addr);
-    }
-    else
-    {
-        switch (getaddrinfoRes)
-        {
-        case EAI_NODATA:
-            err = INET_NO_ERROR;
-            break;
-        case EAI_NONAME:
-            err = INET_ERROR_HOST_NOT_FOUND;
-            break;
-        case EAI_AGAIN:
-            err = INET_ERROR_DNS_TRY_AGAIN;
-            break;
-        case EAI_SYSTEM:
-            err = Weave::System::MapErrorPOSIX(errno);
-            break;
-        default:
-            err = INET_ERROR_DNS_NO_RECOVERY;
-            break;
-        }
-    }
+    // Invoke the caller's completion function.
+    onComplete(appState, res, NumAddrs, addrArray);
 
-    if (lookupRes != NULL)
-        freeaddrinfo(lookupRes);
-
-    onComplete(appState, err, NumAddrs, addrArray);
-
+    // Release DNSResolver object.
     Release();
 
     return INET_NO_ERROR;
@@ -197,6 +233,7 @@ INET_ERROR DNSResolver::Resolve(const char *hostName, uint16_t hostNameLen, uint
 #endif // WEAVE_SYSTEM_CONFIG_USE_SOCKETS
 #endif // WEAVE_SYSTEM_CONFIG_USE_SOCKETS || (WEAVE_SYSTEM_CONFIG_USE_LWIP && LWIP_DNS)
 }
+
 
 /**
  *  This method cancels DNS requests that are in progress.
@@ -291,40 +328,149 @@ void DNSResolver::LwIPHandleResolveComplete(const char *name, ip_addr_t *ipaddr,
         Weave::System::Layer& lSystemLayer = resolver->SystemLayer();
 
         // Copy the resolved address to the application supplied buffer, but only if the request hasn't been canceled.
-        if (resolver->OnComplete != NULL)
-            resolver->CopyAddresses((ipaddr != NULL) ? 1 : 0, ipaddr);
+        if (resolver->OnComplete != NULL && ipaddr != NULL)
+        {
+#if LWIP_VERSION_MAJOR > 1 || LWIP_VERSION_MINOR >= 5
+            resolver->AddrArray[0] = IPAddress::FromLwIPAddr(*ipaddr);
+#else
+            resolver->AddrArray[0] = IPAddress::FromIPv4(*ipaddr);
+#endif
+            resolver->NumAddrs = 1;
+        }
 
         lSystemLayer.PostEvent(*resolver, kInetEvent_DNSResolveComplete, 0);
     }
 }
 
-/**
- *  This method copies a list of resolved IP addresses to the DNS table.
- *
- *  @param[in]  numAddrs    The number of addresses in the list.
- *  @param[in]  addrs       A list of resolved IP addresses.
- *
- */
-void DNSResolver::CopyAddresses(uint8_t numAddrs, const ip_addr_t *addrs)
-{
-    if (numAddrs > MaxAddrs)
-        numAddrs = MaxAddrs;
-
-    for (uint8_t i = 0; i < numAddrs; i++)
-    {
-#if LWIP_VERSION_MAJOR > 1 || LWIP_VERSION_MINOR >= 5
-        AddrArray[i] = IPAddress::FromLwIPAddr(addrs[i]);
-#else
-        AddrArray[i] = IPAddress::FromIPv4(addrs[i]);
-#endif
-    }
-
-    NumAddrs = numAddrs;
-}
-
 #endif // WEAVE_SYSTEM_CONFIG_USE_LWIP
 
 #if WEAVE_SYSTEM_CONFIG_USE_SOCKETS
+
+void DNSResolver::InitAddrInfoHints(struct addrinfo & hints)
+{
+    uint8_t addrFamilyOption = (DNSOptions & kDNSOption_AddrFamily_Mask);
+
+    memset(&hints, 0, sizeof(hints));
+#if INET_CONFIG_ENABLE_IPV4
+    if (addrFamilyOption == kDNSOption_AddrFamily_IPv4Only)
+    {
+        hints.ai_family = AF_INET;
+    }
+    else if (addrFamilyOption == kDNSOption_AddrFamily_IPv6Only)
+    {
+        hints.ai_family = AF_INET6;
+    }
+    else
+    {
+        hints.ai_family = AF_UNSPEC;
+    }
+#else // INET_CONFIG_ENABLE_IPV4
+    hints.ai_family = AF_INET6;
+#endif // INET_CONFIG_ENABLE_IPV4
+    hints.ai_flags = AI_ADDRCONFIG;
+}
+
+INET_ERROR DNSResolver::ProcessGetAddrInfoResult(int returnCode, struct addrinfo * results)
+{
+    INET_ERROR err = INET_NO_ERROR;
+
+    // If getaddrinfo() succeeded, copy addresses in the returned addrinfo structures into the
+    // caller's supplied IPAddress array.  Only include addresses of the family specified in the
+    // supplied DNS options, and order them according to the caller's preference.
+    if (returnCode == 0)
+    {
+        NumAddrs = 0;
+
+#if INET_CONFIG_ENABLE_IPV4
+
+        uint8_t addrFamilyOption = (DNSOptions & kDNSOption_AddrFamily_Mask);
+        int orderFirst = AF_UNSPEC;
+        int orderSecond = AF_UNSPEC;
+
+        if (addrFamilyOption == kDNSOption_AddrFamily_IPv4Only || addrFamilyOption == kDNSOption_AddrFamily_IPv4Preferred)
+        {
+            orderFirst = AF_INET;
+            if (addrFamilyOption == kDNSOption_AddrFamily_IPv4Preferred)
+            {
+                orderSecond = AF_INET6;
+            }
+        }
+        else if (addrFamilyOption == kDNSOption_AddrFamily_IPv6Only || addrFamilyOption == kDNSOption_AddrFamily_IPv6Preferred)
+        {
+            orderFirst = AF_INET6;
+            if (addrFamilyOption == kDNSOption_AddrFamily_IPv6Preferred)
+            {
+                orderSecond = AF_INET;
+            }
+        }
+
+        CopyAddresses(orderFirst, results);
+        if (orderSecond != AF_UNSPEC)
+        {
+            CopyAddresses(orderSecond, results);
+        }
+
+#else // INET_CONFIG_ENABLE_IPV4
+
+        CopyAddresses(AF_INET6, results);
+
+#endif // INET_CONFIG_ENABLE_IPV4
+
+        // If in the end no addresses were returned, treat this as a "host not found" error.
+        if (NumAddrs == 0)
+        {
+            err = INET_ERROR_HOST_NOT_FOUND;
+        }
+    }
+
+    // Otherwise, getaddrinfo() failed, so translate the return code to an appropriate
+    // Inet error.
+    else
+    {
+        switch (returnCode)
+        {
+        case EAI_NONAME:
+        case EAI_NODATA:
+        case EAI_ADDRFAMILY:
+            // Each of these errors is translated to "host not found" for simplicity at the
+            // application layer. On most systems, the errors have the following meanings:
+            //    EAI_NONAME is returned when there are no DNS records for the requested host name.
+            //    EAI_NODATA is returned when there are no host records (A or AAAA) for the requested
+            //      name, but other records do exist (e.g. MX or TXT).
+            //    EAI_ADDRFAMILY is returned when a text-form address is given as the name, but its
+            //      address family (IPv4 or IPv6) does not match the value specified in hints.ai_family.
+            err = INET_ERROR_HOST_NOT_FOUND;
+            break;
+        case EAI_AGAIN:
+            err = INET_ERROR_DNS_TRY_AGAIN;
+            break;
+        case EAI_SYSTEM:
+            err = Weave::System::MapErrorPOSIX(errno);
+            break;
+        default:
+            err = INET_ERROR_DNS_NO_RECOVERY;
+            break;
+        }
+    }
+
+    // Free the results structure.
+    if (results != NULL)
+        freeaddrinfo(results);
+
+    return err;
+}
+
+void DNSResolver::CopyAddresses(int family, const struct addrinfo * addrs)
+{
+    for (const struct addrinfo *addr = addrs; addr != NULL && NumAddrs < MaxAddrs; addr = addr->ai_next)
+    {
+        if (family == AF_UNSPEC || addr->ai_addr->sa_family == family)
+        {
+            AddrArray[NumAddrs++] = IPAddress::FromSockAddr(*addr->ai_addr);
+        }
+    }
+}
+
 #if INET_CONFIG_ENABLE_ASYNC_DNS_SOCKETS
 
 void DNSResolver::HandleAsyncResolveComplete(void)
