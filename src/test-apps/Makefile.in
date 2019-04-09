@@ -683,7 +683,7 @@ libWeaveTestCommon_a_LIBADD =
 am__libWeaveTestCommon_a_SOURCES_DIST = CASEOptions.cpp \
 	KeyExportOptions.cpp TAKEOptions.cpp DeviceDescOptions.cpp \
 	Certs.cpp TestGroupKeyStore.cpp ToolCommon.cpp \
-	ToolCommonOptions.cpp PASEEngineTest.cpp \
+	ToolCommonOptions.cpp TapAddrAutoconf.cpp PASEEngineTest.cpp \
 	MockPlatformClocks.cpp TestPersistedStorageImplementation.cpp
 @WEAVE_BUILD_TESTS_TRUE@am_libWeaveTestCommon_a_OBJECTS =  \
 @WEAVE_BUILD_TESTS_TRUE@	CASEOptions.$(OBJEXT) \
@@ -694,6 +694,7 @@ am__libWeaveTestCommon_a_SOURCES_DIST = CASEOptions.cpp \
 @WEAVE_BUILD_TESTS_TRUE@	TestGroupKeyStore.$(OBJEXT) \
 @WEAVE_BUILD_TESTS_TRUE@	ToolCommon.$(OBJEXT) \
 @WEAVE_BUILD_TESTS_TRUE@	ToolCommonOptions.$(OBJEXT) \
+@WEAVE_BUILD_TESTS_TRUE@	TapAddrAutoconf.$(OBJEXT) \
 @WEAVE_BUILD_TESTS_TRUE@	PASEEngineTest.$(OBJEXT) \
 @WEAVE_BUILD_TESTS_TRUE@	MockPlatformClocks.$(OBJEXT) \
 @WEAVE_BUILD_TESTS_TRUE@	TestPersistedStorageImplementation.$(OBJEXT)
@@ -1952,12 +1953,13 @@ am__noinst_HEADERS_DIST = CASEOptions.h DMTestClient.h \
 	MockWdmNodeOptions.h MockWdmSubscriptionInitiator.h \
 	MockWdmSubscriptionResponder.h MockWdmTestVerifier.h \
 	MockWdmViewClient.h MockWdmViewServer.h PASEEngineTest.h \
-	TAKEOptions.h TestDRBG.h TestEventLoggingSchemaExamples.h \
-	TestGroupKeyStore.h TestInetLayerCommon.hpp \
-	TestPersistedStorageImplementation.h TestProfile.h TestWRMP.h \
-	TestWdmOneWayCommand.h TestWdmSubscriptionlessNotification.h \
-	TestWeaveCertData.h TestWeaveTunnel.h TestWeaveTunnelServer.h \
-	ToolCommon.h ToolCommonOptions.h WdmNextPerfUtility.h \
+	TAKEOptions.h TapAddrAutoconf.h TestDRBG.h \
+	TestEventLoggingSchemaExamples.h TestGroupKeyStore.h \
+	TestInetLayerCommon.hpp TestPersistedStorageImplementation.h \
+	TestProfile.h TestWRMP.h TestWdmOneWayCommand.h \
+	TestWdmSubscriptionlessNotification.h TestWeaveCertData.h \
+	TestWeaveTunnel.h TestWeaveTunnelServer.h ToolCommon.h \
+	ToolCommonOptions.h WdmNextPerfUtility.h \
 	crypto-tests/WeaveCryptoTests.h nlweavebdxclient-development.h \
 	nlweavebdxclient.h nlweavebdxserver-development.h \
 	nlweaveswuclient.h schema/nest/test/trait/TestATrait.h \
@@ -2883,12 +2885,13 @@ noinst_HEADERS = CASEOptions.h DMTestClient.h DeviceDescOptions.h \
 	MockWdmNodeOptions.h MockWdmSubscriptionInitiator.h \
 	MockWdmSubscriptionResponder.h MockWdmTestVerifier.h \
 	MockWdmViewClient.h MockWdmViewServer.h PASEEngineTest.h \
-	TAKEOptions.h TestDRBG.h TestEventLoggingSchemaExamples.h \
-	TestGroupKeyStore.h TestInetLayerCommon.hpp \
-	TestPersistedStorageImplementation.h TestProfile.h TestWRMP.h \
-	TestWdmOneWayCommand.h TestWdmSubscriptionlessNotification.h \
-	TestWeaveCertData.h TestWeaveTunnel.h TestWeaveTunnelServer.h \
-	ToolCommon.h ToolCommonOptions.h WdmNextPerfUtility.h \
+	TAKEOptions.h TapAddrAutoconf.h TestDRBG.h \
+	TestEventLoggingSchemaExamples.h TestGroupKeyStore.h \
+	TestInetLayerCommon.hpp TestPersistedStorageImplementation.h \
+	TestProfile.h TestWRMP.h TestWdmOneWayCommand.h \
+	TestWdmSubscriptionlessNotification.h TestWeaveCertData.h \
+	TestWeaveTunnel.h TestWeaveTunnelServer.h ToolCommon.h \
+	ToolCommonOptions.h WdmNextPerfUtility.h \
 	crypto-tests/WeaveCryptoTests.h nlweavebdxclient-development.h \
 	nlweavebdxclient.h nlweavebdxserver-development.h \
 	nlweaveswuclient.h schema/nest/test/trait/TestATrait.h \
@@ -2940,6 +2943,7 @@ noinst_HEADERS = CASEOptions.h DMTestClient.h DeviceDescOptions.h \
 @WEAVE_BUILD_TESTS_TRUE@    TestGroupKeyStore.cpp                        \
 @WEAVE_BUILD_TESTS_TRUE@    ToolCommon.cpp                               \
 @WEAVE_BUILD_TESTS_TRUE@    ToolCommonOptions.cpp                        \
+@WEAVE_BUILD_TESTS_TRUE@    TapAddrAutoconf.cpp                          \
 @WEAVE_BUILD_TESTS_TRUE@    PASEEngineTest.cpp                           \
 @WEAVE_BUILD_TESTS_TRUE@    MockPlatformClocks.cpp                       \
 @WEAVE_BUILD_TESTS_TRUE@    TestPersistedStorageImplementation.cpp       \
@@ -4164,6 +4168,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MockSWUServer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PASEEngineTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TAKEOptions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TapAddrAutoconf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TestASN1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TestAppKeys.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TestArgParser.Po@am__quote@
@@ -8586,6 +8591,7 @@ maintainer-clean-generic:
 @WEAVE_BUILD_COVERAGE_REPORTS_FALSE@clean-local:
 @WEAVE_BUILD_TESTS_FALSE@clean-local:
 @WEAVE_BUILD_TESTS_FALSE@install-exec-local:
+@WEAVE_BUILD_TESTS_FALSE@uninstall-local:
 clean: clean-recursive
 
 clean-am: clean-checkPROGRAMS clean-generic clean-libexecPROGRAMS \
