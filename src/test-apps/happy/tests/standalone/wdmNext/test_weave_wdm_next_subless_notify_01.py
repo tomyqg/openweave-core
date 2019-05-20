@@ -47,7 +47,7 @@ class test_weave_wdm_next_subless_notify_01(weave_wdm_next_test_base):
         wdm_next_args['total_client_count'] = 0
         wdm_next_args['final_client_status'] = 0
         wdm_next_args['timer_client_period'] = 0
-        wdm_next_args['test_client_iterations'] = 1
+        count = self.test_client_iterations
         wdm_next_args['test_server_iterations'] = 1
 
         wdm_next_args['total_server_count'] = 0
@@ -84,7 +84,7 @@ class test_weave_wdm_next_subless_notify_01(weave_wdm_next_test_base):
         output_logs['server'] = self.result_data[0]['server_output']
 
 
-        wdm_next_args['test_client_iterations'] = 1
+        count = self.test_client_iterations
         wdm_next_args['test_server_iterations'] = 1
 
         # empty the arrays of strings to look for in the logs; rely on the default check for "Good Iteration"

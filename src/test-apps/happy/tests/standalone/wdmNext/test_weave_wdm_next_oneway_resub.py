@@ -49,7 +49,9 @@ class test_weave_wdm_next_oneway_resub(weave_wdm_next_test_base):
         wdm_next_args['final_client_status'] = 0
         wdm_next_args['timer_client_period'] = 0
         wdm_next_args['enable_client_stop'] = True
-        wdm_next_args['test_client_iterations'] = 1
+        #TODO: use json file to track iteration for each test case iteration.
+        self.test_client_iterations = 1
+        count = self.test_client_iterations
         wdm_next_args['test_client_delay'] = 2000
         wdm_next_args['enable_client_flip'] = 0
         wdm_next_args['enable_retry'] = True
@@ -68,7 +70,7 @@ class test_weave_wdm_next_oneway_resub(weave_wdm_next_test_base):
         # We're going to run once, but expect a successful subscription since
         # retries are enabled.
         NUM_ITERATIONS = 1
-        wdm_next_args['test_client_iterations'] = NUM_ITERATIONS
+        count = self.test_client_iterations
         wdm_next_args['server_log_check'] = []
 
         fault_list = {}

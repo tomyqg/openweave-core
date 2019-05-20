@@ -41,7 +41,7 @@ class test_weave_wdm_next_mutual_subscribe_02(weave_wdm_next_test_base):
         wdm_next_args['total_client_count'] = 0
         wdm_next_args['final_client_status'] = 1
         wdm_next_args['timer_client_period'] = 0
-        wdm_next_args['test_client_iterations'] = 5
+        count = self.test_client_iterations
         wdm_next_args['test_client_delay'] = 2000
         wdm_next_args['enable_client_flip'] = 0
         wdm_next_args['save_client_perf'] = False
@@ -54,21 +54,18 @@ class test_weave_wdm_next_mutual_subscribe_02(weave_wdm_next_test_base):
         wdm_next_args['client_clear_state_between_iterations'] = True
         wdm_next_args['server_clear_state_between_iterations'] = True
 
-        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] bound mutual subscription is going away', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] \[(ALIVE|CONFM)\] EndSubscription Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Client->kEvent_OnNotificationProcessed', wdm_next_args['test_client_iterations']),
-                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
-        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] bound mutual subscription is going away', wdm_next_args['test_client_iterations']),
-                                             ('Client\[0\] \[(ALIVE|CONFM)\] CancelRequestHandler Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Client->kEvent_OnNotificationProcessed', wdm_next_args['test_client_iterations']),
-                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
+        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] bound mutual subscription is going away', count),
+                                             ('Handler\[0\] \[(ALIVE|CONFM)\] EndSubscription Ref\(\d+\)', count),
+                                             ('Client->kEvent_OnNotificationProcessed', count)
+                                             ]
+        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] bound mutual subscription is going away', count),
+                                             ('Client\[0\] \[(ALIVE|CONFM)\] CancelRequestHandler Ref\(\d+\)', count),
+                                             ('Client->kEvent_OnNotificationProcessed', count)
+                                             ]
         wdm_next_args['test_tag'] = self.__class__.__name__[19:].upper()
-        wdm_next_args['test_case_name'] = ['E02: Mutual Subscribe: Root path. Null Version, Publisher in initiator cancels',
-                                           'M02: Stress Mutual Subscribe: Root path. Null Version. Publisher in initiator cancels']
+        wdm_next_args['test_case_name'] = ['M02: Stress Mutual Subscribe: Root path. Null Version. Publisher in initiator cancels']
         print 'test file: ' + self.__class__.__name__
-        print "weave-wdm-next test E02 and M02"
+        print "weave-wdm-next test M02"
         super(test_weave_wdm_next_mutual_subscribe_02, self).weave_wdm_next_test_base(wdm_next_args)
 
 

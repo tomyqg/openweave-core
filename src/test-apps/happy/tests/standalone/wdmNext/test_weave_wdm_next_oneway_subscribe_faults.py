@@ -53,7 +53,7 @@ class test_weave_wdm_next_oneway_subscribe_faults(weave_wdm_next_test_base):
         wdm_next_args['total_client_count'] = 1
         wdm_next_args['final_client_status'] = 0
         wdm_next_args['timer_client_period'] = 3000
-        wdm_next_args['test_client_iterations'] = 1
+        count = self.test_client_iterations
         wdm_next_args['test_client_delay'] = 2000
         wdm_next_args['enable_client_flip'] = 1
 
@@ -63,12 +63,12 @@ class test_weave_wdm_next_oneway_subscribe_faults(weave_wdm_next_test_base):
         wdm_next_args['test_server_delay'] = 0
         wdm_next_args['enable_server_flip'] = 1
 
-        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] EndSubscription Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Client\[0\] \[CANCL\] _AbortSubscription Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Client->kEvent_OnNotificationProcessed', wdm_next_args['test_client_iterations'] * (wdm_next_args['total_server_count']) +1),
-                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
-        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] CancelRequestHandler', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
+        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] EndSubscription Ref\(\d+\)', count),
+                                             ('Client\[0\] \[CANCL\] _AbortSubscription Ref\(\d+\)', count),
+                                             ('Client->kEvent_OnNotificationProcessed', count * (wdm_next_args['total_server_count']) +1),
+                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', count)]
+        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] CancelRequestHandler', count),
+                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', count)]
 
         base_test_tag = "_ONEWAY_SUB_FAULTS"
         wdm_next_args['test_tag'] = base_test_tag
@@ -90,7 +90,7 @@ class test_weave_wdm_next_oneway_subscribe_faults(weave_wdm_next_test_base):
         # The third one should always succeed; the second one fails only because a fault that
         # was supposed to be triggered at the end of the first one ends up hitting the beginning
         # of the second one instead.
-        wdm_next_args['test_client_iterations'] = 3
+        count = self.test_client_iterations
         # empty the arrays of strings to look for in the logs; rely on the default check for "Good Iteration"
         wdm_next_args['client_log_check'] = []
         wdm_next_args['server_log_check'] = []

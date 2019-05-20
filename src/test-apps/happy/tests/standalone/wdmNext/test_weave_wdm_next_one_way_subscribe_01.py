@@ -44,7 +44,7 @@ class test_weave_wdm_next_one_way_subscribe_01(weave_wdm_next_test_base):
         wdm_next_args['total_client_count'] = 0
         wdm_next_args['final_client_status'] = 0
         wdm_next_args['timer_client_period'] = 0
-        wdm_next_args['test_client_iterations'] = 5
+        count = self.test_client_iterations
         wdm_next_args['test_client_delay'] = 2000
         wdm_next_args['enable_client_flip'] = 0
 
@@ -56,14 +56,13 @@ class test_weave_wdm_next_one_way_subscribe_01(weave_wdm_next_test_base):
         wdm_next_args['client_clear_state_between_iterations'] = True
         wdm_next_args['server_clear_state_between_iterations'] = True
 
-        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] EndSubscription Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Client->kEvent_OnNotificationProcessed', wdm_next_args['test_client_iterations']),
-                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
-        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] CancelRequestHandler Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
+        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] EndSubscription Ref\(\d+\)', count),
+                                             ('Client->kEvent_OnNotificationProcessed', count),
+                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', count)]
+        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] CancelRequestHandler Ref\(\d+\)', count),
+                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', count)]
         wdm_next_args['test_tag'] = self.__class__.__name__[19:].upper()
-        wdm_next_args['test_case_name'] = ['B01: One way Subscribe: Root path. Null Version. Client cancels',
-                                           'L01: Stress One way Subscribe: Root path. Null Version. Client cancels']
+        wdm_next_args['test_case_name'] = ['L01: Stress One way Subscribe: Root path. Null Version. Client cancels']
         print 'test file: ' + self.__class__.__name__
         print "weave-wdm-next test B01 and L01"
         super(test_weave_wdm_next_one_way_subscribe_01, self).weave_wdm_next_test_base(wdm_next_args)

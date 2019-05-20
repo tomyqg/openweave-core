@@ -41,7 +41,7 @@ class test_weave_wdm_next_mutual_subscribe_64(weave_wdm_next_test_base):
         wdm_next_args['total_client_count'] = 2
         wdm_next_args['final_client_status'] = 3
         wdm_next_args['timer_client_period'] = 5000
-        wdm_next_args['test_client_iterations'] = 5
+        count = self.test_client_iterations
         wdm_next_args['test_client_delay'] = 35000
         wdm_next_args['enable_client_flip'] = 1
 
@@ -54,21 +54,21 @@ class test_weave_wdm_next_mutual_subscribe_64(weave_wdm_next_test_base):
         wdm_next_args['client_clear_state_between_iterations'] = True
         wdm_next_args['server_clear_state_between_iterations'] = True
 
-        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] bound mutual subscription is going away', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] \[(ALIVE|CONFM)\] AbortSubscription Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Client->kEvent_OnNotificationProcessed', wdm_next_args['test_client_iterations']),
-                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations']),
-                                             ('Error retrieving data from trait', wdm_next_args['test_client_iterations'] * 2),
-                                             ('trait property is too big so that it fails to fit in the packet', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
-        wdm_next_args['server_log_check'] = [('TimerEventHandler Ref\(\d+\) Timeout', wdm_next_args['test_client_iterations']),
-                                             ('Client->kEvent_OnNotificationProcessed', wdm_next_args['test_client_iterations'] * (wdm_next_args['total_client_count'] + 1)),
-                                             ('bound mutual subscription is going away', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] \[(ALIVE|CONFM)\] HandleSubscriptionTerminated', wdm_next_args['test_client_iterations']),
-                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations']),
-                                             ('Error retrieving data from trait', wdm_next_args['test_client_iterations']),
-                                             ('trait property is too big so that it fails to fit in the packet', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
+        wdm_next_args['client_log_check'] = [('Client\[0\] \[(ALIVE|CONFM)\] bound mutual subscription is going away', count),
+                                             ('Handler\[0\] \[(ALIVE|CONFM)\] AbortSubscription Ref\(\d+\)', count),
+                                             ('Client->kEvent_OnNotificationProcessed', count),
+                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', count),
+                                             ('Error retrieving data from trait', count * 2),
+                                             ('trait property is too big so that it fails to fit in the packet', count),
+                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', count)]
+        wdm_next_args['server_log_check'] = [('TimerEventHandler Ref\(\d+\) Timeout', count),
+                                             ('Client->kEvent_OnNotificationProcessed', count * (wdm_next_args['total_client_count'] + 1)),
+                                             ('bound mutual subscription is going away', count),
+                                             ('Handler\[0\] \[(ALIVE|CONFM)\] HandleSubscriptionTerminated', count),
+                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', count),
+                                             ('Error retrieving data from trait', count),
+                                             ('trait property is too big so that it fails to fit in the packet', count),
+                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', count)]
         wdm_next_args['test_tag'] = self.__class__.__name__[19:].upper()
         wdm_next_args['test_case_name'] = ['N01: Stress Mutual Subscribe: Oversize trait exists in the end of source trait list at initiator and in the beginning of source trait list at responder.']
         print 'test file: ' + self.__class__.__name__

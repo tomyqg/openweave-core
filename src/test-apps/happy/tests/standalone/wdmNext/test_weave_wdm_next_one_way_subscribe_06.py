@@ -41,7 +41,7 @@ class test_weave_wdm_next_one_way_subscribe_06(weave_wdm_next_test_base):
         wdm_next_args['total_client_count'] = 2
         wdm_next_args['final_client_status'] = 2
         wdm_next_args['timer_client_period'] = 5000
-        wdm_next_args['test_client_iterations'] = 5
+        count = self.test_client_iterations
         wdm_next_args['test_client_delay'] = 35000
         wdm_next_args['enable_client_flip'] = 0
 
@@ -53,15 +53,14 @@ class test_weave_wdm_next_one_way_subscribe_06(weave_wdm_next_test_base):
         wdm_next_args['client_clear_state_between_iterations'] = True
         wdm_next_args['server_clear_state_between_iterations'] = True
 
-        wdm_next_args['client_log_check'] = [('Client\[0\] \[ALIVE\] _AbortSubscription Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Client->kEvent_OnNotificationProcessed', wdm_next_args['test_client_iterations'] * (wdm_next_args['total_server_count'] + 1)),
-                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
-        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] TimerEventHandler Ref\(\d+\) Timeout', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] \[(ALIVE|CONFM)\] AbortSubscription Ref\(\d+\)', wdm_next_args['test_client_iterations']),
-                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', wdm_next_args['test_client_iterations'])]
+        wdm_next_args['client_log_check'] = [('Client\[0\] \[ALIVE\] _AbortSubscription Ref\(\d+\)', count),
+                                             ('Client->kEvent_OnNotificationProcessed', count * (wdm_next_args['total_server_count'] + 1)),
+                                             ('Client\[0\] moving to \[ FREE\] Ref\(0\)', count)]
+        wdm_next_args['server_log_check'] = [('Handler\[0\] \[(ALIVE|CONFM)\] TimerEventHandler Ref\(\d+\) Timeout', count),
+                                             ('Handler\[0\] \[(ALIVE|CONFM)\] AbortSubscription Ref\(\d+\)', count),
+                                             ('Handler\[0\] Moving to \[ FREE\] Ref\(0\)', count)]
         wdm_next_args['test_tag'] = self.__class__.__name__[19:].upper()
-        wdm_next_args['test_case_name'] = ['C04: One way Subscribe: Root path. Null Version. Mutate data in Publisher. Client aborts',
-                                           'L06: Stress One way Subscribe: Root path. Null Version. Mutate data in Publisher. Client aborts']
+        wdm_next_args['test_case_name'] = ['L06: Stress One way Subscribe: Root path. Null Version. Mutate data in Publisher. Client aborts']
         print 'test file: ' + self.__class__.__name__
         print "weave-wdm-next test C04 and L06"
         super(test_weave_wdm_next_one_way_subscribe_06, self).weave_wdm_next_test_base(wdm_next_args)
