@@ -64,7 +64,11 @@ AbsTopResultDir                 = $(CURDIR)/$(TopResultDir)
 
 TargetTuple                     = $(shell ${AbsTopSourceDir}/third_party/nlbuild-autotools/repo/third_party/autoconf/config.guess | sed -e 's/[[:digit:].]*$$//g')
 
+ifeq ($(HOSTOS),darwin)
+ProjectConfigDir               ?= $(AbsTopSourceDir)/build/config/standalone/darwin
+else
 ProjectConfigDir               ?= $(AbsTopSourceDir)/build/config/standalone
+endif
 
 ifeq ($(ARCH),x86_64)
 configure_OPTIONS               = CPPFLAGS="-maes"
@@ -87,22 +91,36 @@ ifeq ($(HOSTOS),darwin)
 configure_OPTIONS              += ac_cv_func_clock_gettime=no  ac_cv_have_decl_clock_gettime=no
 endif
 
-# By default, build using the system's OpenSSL library, except on OSX which needs
-# the Weave internal OpenSSL.
-# However, if NO_OPENSSL = 1, build with an alternate configuration that avoids the
-# use of OpenSSL.  Note that building with NO_OPENSSL = 1 automatically suppresses
-# the building of various command line tools that depend on OpenSSL (e.g. the weave tool).
+# By default, attempt use the system's OpenSSL library, falling back to building the internal
+# copy of OpenSSL (in third_party/openssl) where appropriate.
+#
+# On Linux, the logic expects openssl to be installed in the standard location, and will fail
+# if not found.  On most systems this requires the libssl-dev package to be installed.
+#
+# On OS X, the logic checks for openssl in the location used by the homebrew openssl formula
+# (/usr/local/opt/openssl).  If not found, the internal copy of OpenSSL will be built.
+#
+# The variable OPENSSL can be used to override the above logic and specify a particular location
+# in which to find the OpenSSL headers and library.
+#
+# If OPENSSL=no or NO_OPENSSL=1, OpenWeave will be built without OpenSSL.  Note that building
+# without OpenSSL automatically suppresses the building of various command line tools that have
+# a hard dependency on OpenSSL (e.g. the weave tool).
 
 ifeq ($(NO_OPENSSL),1)
-ProjectConfigDir                = $(AbsTopSourceDir)/build/config/standalone/no-openssl
-configure_OPTIONS              += --with-openssl=no --disable-tools
+OPENSSL                         = no
 else
 ifeq ($(HOSTOS),darwin)
-ProjectConfigDir                = $(AbsTopSourceDir)/build/config/standalone/darwin
-configure_OPTIONS              += --with-openssl=internal
+OSX_OPENSSL_DIR                 = /usr/local/opt/openssl
+OPENSSL                        ?= $(shell if test -d $(OSX_OPENSSL_DIR); then echo $(OSX_OPENSSL_DIR); else echo internal; fi)
 else
-configure_OPTIONS              += --with-openssl=
+OPENSSL                        ?=
 endif
+endif
+configure_OPTIONS              += --with-openssl=$(OPENSSL)
+ifeq ($(OPENSSL),no)
+configure_OPTIONS              += --disable-tools
+ProjectConfigDir                = $(AbsTopSourceDir)/build/config/standalone/no-openssl
 endif
 
 # If the user has asserted USE_FUZZING enable fuzzing build
